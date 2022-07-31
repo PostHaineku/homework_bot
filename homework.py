@@ -39,7 +39,7 @@ def send_message(bot, message):
 
 
 def get_api_answer(current_timestamp):
-    """получает ответ от апи"""
+    """Получает ответ от апи."""
     timestamp = current_timestamp
     params = {'from_date': timestamp}
     response = requests.get(ENDPOINT, headers=HEADERS, params=params)
