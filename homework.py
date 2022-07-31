@@ -31,7 +31,7 @@ logging.basicConfig(
 
 
 def send_message(bot, message):
-    """отправляет сообщение в тг"""
+    """Отправляет сообщение в тг."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
     except Exception('Сбой при отправке сообщения'):
@@ -54,7 +54,7 @@ def get_api_answer(current_timestamp):
 
 
 def check_response(response):
-    """проверяет тип данных и возвращает нашу домашнюю работу"""
+    """Проверяет тип данных и возвращает нашу домашнюю работу."""
     try:
         homework = response['homeworks']
         if not isinstance(homework, list):
@@ -75,7 +75,7 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """Извлекает информацию о конкретной домашней работе"""
+    """Извлекает информацию о конкретной домашней работе."""
     try:
         homework_name = homework['homework_name']
         homework_status = homework['status']
@@ -87,7 +87,7 @@ def parse_status(homework):
 
 
 def check_tokens():
-    """проверка наличия переменных среды"""
+    """Проверка наличия переменных среды."""
     # if 'PRACTICUM_TOKEN' and 'TELEGRAM_TOKEN'
     # and 'TELEGRAM_CHAT_ID' not in os.environ:
     #     logging.critical('Не хватает токенов в .env')
