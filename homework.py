@@ -29,6 +29,7 @@ logging.basicConfig(
     filename='program.log',
     level=logging.DEBUG)
 
+
 def send_message(bot, message):
     """отправляет сообщение в тг"""
     try:
@@ -57,7 +58,7 @@ def check_response(response):
     try:
         homework = response['homeworks']
         if not isinstance(homework, list):
-            raise TypeError(f'Неверный формат homeworks')
+            raise TypeError('Неверный формат homeworks')
         if 'homeworks' in response:
             homework = response['homeworks']
             return homework
@@ -69,40 +70,37 @@ def check_response(response):
 
 # мне показалось, что ТЗ в этом спринте просто ужасно
 # я вообще не понимаю все исключения, которые нужно отрабатывать
-# можете, пожалуйста, дать мне какой-нибудь доп материал или что именно мне нужно
-# повторить/посмотреть/почитать
+# можете, пожалуйста, дать мне какой-нибудь доп материал
+# или что именно мне нужно повторить/посмотреть/почитать
 
 
 def parse_status(homework):
-    """Извлекает информацию о конкретной домашней работе""" 
+    """Извлекает информацию о конкретной домашней работе"""
     try:
         homework_name = homework['homework_name']
         homework_status = homework['status']
         verdict = HOMEWORK_STATUSES[homework_status]
         return f'Изменился статус проверки работы "{homework_name}". {verdict}'
     except KeyError:
-        logging.error(f'ошибка статуса домашней работы')
-        raise KeyError(f'Ошибка')
-    except TypeError:
-        logging.error(f'Не хватает данных?')
-        raise TypeError(f'Ошибка')
-    except homework is str:
-        raise TypeError('wtf')
+        logging.error('Ошибка статуса домашней работы')
+        raise KeyError('Ошибка')
 
 
 def check_tokens():
     """проверка наличия переменных среды"""
-    #if 'PRACTICUM_TOKEN' and 'TELEGRAM_TOKEN' and 'TELEGRAM_CHAT_ID' not in os.environ:
-        #logging.critical('Не хватает токенов в .env')
-        #return False
+    # if 'PRACTICUM_TOKEN' and 'TELEGRAM_TOKEN'
+    # and 'TELEGRAM_CHAT_ID' not in os.environ:
+    #     logging.critical('Не хватает токенов в .env')
+    #     return False
     if PRACTICUM_TOKEN and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
         return True
     else:
         return False
 
 # я искренне пытался сделать так, чтобы оно прошло тесты
-# мой код работает, но как сделать по другому и чтобы прошло тесты - я без понятия
- 
+# мой код работает,
+# но как сделать по другому и чтобы прошло тесты - я без понятия
+
 
 def main():
     """Основная логика работы бота."""
@@ -112,6 +110,7 @@ def main():
         raise TokensException('Ошибка переменных окружения')
     while True:
         try:
+            current_timestamp = time.time()
             response = get_api_answer(current_timestamp)
             homework = check_response(response)
             message = parse_status(homework[0])
@@ -127,7 +126,6 @@ def main():
                 send_message(bot, message)
             message = f'Сбой в работе программы: {error}'
             time.sleep(RETRY_TIME)
-
 
 
 if __name__ == '__main__':
