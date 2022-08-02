@@ -1,3 +1,4 @@
+# -*- coding: cp1251 -*-
 import logging
 import sys
 import os
@@ -37,35 +38,38 @@ def send_message(bot, message):
     """Отправляет сообщение в тг."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
-        logging.info('Отправляем сообщение..')
-    except Exception('Сбой при отправке сообщения'):
-        raise MessageNotSent('Сбой при отправке сообщения')
+        logging.info('Sending message..')
+    except Exception('Failed to send message'):
+        raise MessageNotSent('Failed to send message')
     else:
-        logging.info('Сообщение успешно отправлено.')
+        logging.info('Message sent successfully.')
 
 
 def get_api_answer(current_timestamp):
     """Получает ответ от апи."""
     timestamp = current_timestamp
     params = {'from_date': timestamp}
+    logging.info('Requesting API access')
     response = requests.get(ENDPOINT, headers=HEADERS, params=params)
-    logging.info('Запрашиваем доступ к API')
     if response.status_code == HTTPStatus.NOT_FOUND:
-        raise HTTPStatusException('Эндпоинт не отвечает')
+        raise HTTPStatusException('Endpoint is not avalible')
     elif response.status_code != HTTPStatus.OK:
-        raise HTTPStatusException('Эндпоинт недоступен')
+        raise HTTPStatusException('Endpoint not responding')
     return response.json()
+# В общем, заработало если я ставлю timestamp=0
+# С текущим временем рейзится исключение на 56 строчке
+# Вы писали что 54 строчка не нужна, но без нее не проходит пайтест
 
 
 def check_response(response):
     """Проверяет тип данных и возвращает нашу домашнюю работу."""
     if not isinstance(response, dict):
-        raise TypeError('Некорректный ответ от API')
+        raise TypeError('Incorrect API response')
     homework = response.get('homeworks')
     if 'homeworks' not in response or 'current_date' not in response:
-        raise KeyError('Отсутствуют ожидаемые ключи')
+        raise KeyError('Missing expected keys')
     if not isinstance(homework, list):
-        raise TypeError('Неверный формат homeworks')
+        raise TypeError('Invalid homeworks format')
     return homework
 
 
@@ -74,11 +78,11 @@ def parse_status(homework):
     homework_name = homework.get('homework_name')
     homework_status = homework.get('status')
     if 'homework_name' not in homework:
-        raise KeyError('Отсутствуют ожидаемые ключи')
+        raise KeyError('Missing expected keys')
     if homework_status not in HOMEWORK_STATUSES:
-        raise KeyError('Отсутствуют ожидаемые ключи')
+        raise KeyError('Missing expected keys')
     verdict = HOMEWORK_STATUSES[homework_status]
-    return f'Изменился статус проверки работы "{homework_name}". {verdict}'
+    return f'Homework verification status changed "{homework_name}". {verdict}'
 
 
 def check_tokens():
@@ -89,8 +93,8 @@ def check_tokens():
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
-        logging.critical('Ошибка переменных окружения')
-        sys.exit('Ошибка переменных окружения')
+        logging.critical('Environment variables error')
+        sys.exit('Environment variables error')
     bot = Bot(token=TELEGRAM_TOKEN)
     while True:
         try:
@@ -102,15 +106,13 @@ def main():
             current_timestamp = response.get('current_date')
 
         except Exception as error:
-            message = f'Сбой в работе программы: {error}'
+            message = f'Program crash: {error}'
             logging.error(message)
             message_error = message
             if message_error != message:
                 send_message(bot, message)
         finally:
             time.sleep(RETRY_TIME)
-# при попытке запуска бота у меня все крашится на 53-56 строчке
-# так же не должно быть..?
 
 
 if __name__ == '__main__':
