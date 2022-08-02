@@ -84,7 +84,7 @@ def parse_status(homework):
     if homework_status not in HOMEWORK_STATUSES:
         raise KeyError('Missing expected keys')
     verdict = HOMEWORK_STATUSES[homework_status]
-    return f'Homework verification status changed "{homework_name}". {verdict}'
+    return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
 def check_tokens():
