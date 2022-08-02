@@ -22,9 +22,9 @@ ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
 HOMEWORK_STATUSES = {
-    'approved': 'Р Р°Р±РѕС‚Р° РїСЂРѕРІРµСЂРµРЅР°: СЂРµРІСЊСЋРµСЂСѓ РІСЃС‘ РїРѕРЅСЂР°РІРёР»РѕСЃСЊ. РЈСЂР°!',
-    'reviewing': 'Р Р°Р±РѕС‚Р° РІР·СЏС‚Р° РЅР° РїСЂРѕРІРµСЂРєСѓ СЂРµРІСЊСЋРµСЂРѕРј.',
-    'rejected': 'Р Р°Р±РѕС‚Р° РїСЂРѕРІРµСЂРµРЅР°: Сѓ СЂРµРІСЊСЋРµСЂР° РµСЃС‚СЊ Р·Р°РјРµС‡Р°РЅРёСЏ.'
+    'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
+    'reviewing': 'Работа взята на проверку ревьюером.',
+    'rejected': 'Работа проверена: у ревьюера есть замечания.'
 }
 
 logging.basicConfig(
@@ -34,69 +34,63 @@ logging.basicConfig(
 
 
 def send_message(bot, message):
-    """РћС‚РїСЂР°РІР»СЏРµС‚ СЃРѕРѕР±С‰РµРЅРёРµ РІ С‚Рі."""
+    """Отправляет сообщение в тг."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
-        logging.info('РћС‚РїСЂР°РІР»СЏРµРј СЃРѕРѕР±С‰РµРЅРёРµ')
-    except Exception('РЎР±РѕР№ РїСЂРё РѕС‚РїСЂР°РІРєРµ СЃРѕРѕР±С‰РµРЅРёСЏ'):
-        raise MessageNotSent('РЎР±РѕР№ РїСЂРё РѕС‚РїСЂР°РІРєРµ СЃРѕРѕР±С‰РµРЅРёСЏ')
+        logging.info('Отправляем сообщение..')
+    except Exception('Сбой при отправке сообщения'):
+        raise MessageNotSent('Сбой при отправке сообщения')
     else:
-        logging.info('РЎРѕРѕР±С‰РµРЅРёРµ РѕС‚РїСЂР°РІР»РµРЅРѕ!')
+        logging.info('Сообщение успешно отправлено.')
 
 
 def get_api_answer(current_timestamp):
-    """РџРѕР»СѓС‡Р°РµС‚ РѕС‚РІРµС‚ РѕС‚ Р°РїРё."""
+    """Получает ответ от апи."""
     timestamp = current_timestamp
     params = {'from_date': timestamp}
     response = requests.get(ENDPOINT, headers=HEADERS, params=params)
-    logging.info('РќР°С‡РёРЅР°РµРј Р·Р°РїСЂРѕСЃ Рє API')
+    logging.info('Запрашиваем доступ к API')
     if response.status_code == HTTPStatus.NOT_FOUND:
-        raise HTTPStatusException('Р­РЅРґРїРѕРёРЅС‚ РЅРµ РѕС‚РІРµС‡Р°РµС‚')
+        raise HTTPStatusException('Эндпоинт не отвечает')
     elif response.status_code != HTTPStatus.OK:
-        raise HTTPStatusException('Р­РЅРґРїРѕРёРЅС‚ РЅРµРґРѕСЃС‚СѓРїРµРЅ')
+        raise HTTPStatusException('Эндпоинт недоступен')
     return response.json()
 
 
 def check_response(response):
-    """РџСЂРѕРІРµСЂСЏРµС‚ С‚РёРї РґР°РЅРЅС‹С… Рё РІРѕР·РІСЂР°С‰Р°РµС‚ РЅР°С€Сѓ РґРѕРјР°С€РЅСЋСЋ СЂР°Р±РѕС‚Сѓ."""
+    """Проверяет тип данных и возвращает нашу домашнюю работу."""
     if not isinstance(response, dict):
-        raise TypeError('РќРµРІРµСЂРЅС‹Р№ РѕС‚РІРµС‚ API')
+        raise TypeError('Некорректный ответ от API')
     homework = response.get('homeworks')
     if 'homeworks' not in response or 'current_date' not in response:
-        raise KeyError('РћС‚СЃСѓС‚СЃС‚РІСѓСЋС‚ РѕР¶РёРґР°РµРјС‹Рµ РєР»СЋС‡Рё')
+        raise KeyError('Отсутствуют ожидаемые ключи')
     if not isinstance(homework, list):
-        raise TypeError('РќРµРІРµСЂРЅС‹Р№ С„РѕСЂРјР°С‚ homeworks')
+        raise TypeError('Неверный формат homeworks')
     return homework
-# Р•СЃР»Рё С‡РµСЃС‚РЅРѕ, РІ СЃРёР»Сѓ С‚РѕРіРѕ С‡С‚Рѕ СЏ РІРѕРѕР±С‰Рµ РЅРµ РїРѕРЅРёРјР°Р»
-# РєР°РєРёРµ РёСЃРєР»СЋС‡РµРЅРёСЏ РѕС‚СЂР°Р±Р°С‚С‹РІР°С‚СЊ
-# РЇ РїС‹С‚Р°Р»СЃСЏ РјРµС‚РѕРґРѕРј РІРµР»РёРєРѕРіРѕ С‚С‹РєР° РїРѕРїР°СЃС‚СЊ РІ С‚РµСЃС‚С‹ РїР°Р№С‚РµСЃС‚Р°
-# Р‘С‹Р»Рѕ РѕС‡РµРЅСЊ РїРѕР·РґРЅРѕ Рё СЏ С…РѕС‚РµР» СЃРґР°С‚СЊ СЂР°Р±РѕС‚Сѓ, С‡С‚РѕР±С‹ РІС‹ РјРµРЅСЏ С‚РєРЅСѓР»Рё РЅРѕСЃРѕРј
-# РЇ РЅРµРјРЅРѕРіРѕ РїР»Р°РІР°СЋ, РѕСЃРѕР±РµРЅРЅРѕ РІ РІРµС‰Р°С… РіРґРµ РЅСѓР¶РЅРѕ С‡С‚Рѕ-С‚Рѕ СЂРµР°Р»РёР·РѕРІР°С‚СЊ, С‡С‚Рѕ РІ С‚РµРѕСЂРёРё
-# РџСЂРѕСЃРєР°Р»СЊР·С‹РІР°Р»Рѕ Р»РёС€СЊ РѕС‚С‡Р°СЃС‚Рё. Р‘СѓРґСѓ РїСЂРёР·РЅР°С‚РµР»РµРЅ, РµСЃР»Рё СЃРєРёРЅРµС‚Рµ РїРѕС‡РёС‚Р°С‚СЊ С‚Рѕ
-# Р§С‚Рѕ РїРѕ РєРѕРґСѓ РІРёРґРЅРѕ, С‡С‚Рѕ СЏ РЅРµ РїРѕРЅСЏР»
 
 
 def parse_status(homework):
-    """РР·РІР»РµРєР°РµС‚ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РєРѕРЅРєСЂРµС‚РЅРѕР№ РґРѕРјР°С€РЅРµР№ СЂР°Р±РѕС‚Рµ."""
+    """Извлекает информацию о конкретной домашней работе."""
     homework_name = homework.get('homework_name')
     homework_status = homework.get('status')
     if 'homework_name' not in homework:
-        raise KeyError('РћС‚СЃСѓС‚СЃС‚РІСѓСЋС‚ РѕР¶РёРґР°РµРјС‹Рµ РєР»СЋС‡Рё')
+        raise KeyError('Отсутствуют ожидаемые ключи')
     if homework_status not in HOMEWORK_STATUSES:
-        raise KeyError('РћС‚СЃСѓС‚СЃС‚РІСѓСЋС‚ РѕР¶РёРґР°РµРјС‹Рµ РєР»СЋС‡Рё')
+        raise KeyError('Отсутствуют ожидаемые ключи')
     verdict = HOMEWORK_STATUSES[homework_status]
-    return f'РР·РјРµРЅРёР»СЃСЏ СЃС‚Р°С‚СѓСЃ РїСЂРѕРІРµСЂРєРё СЂР°Р±РѕС‚С‹ "{homework_name}". {verdict}'
+    return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
 def check_tokens():
+    """Проверям переменные среды."""
     return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
 
 
 def main():
-    """РћСЃРЅРѕРІРЅР°СЏ Р»РѕРіРёРєР° СЂР°Р±РѕС‚С‹ Р±РѕС‚Р°."""
+    """Основная логика работы бота."""
     if not check_tokens():
-        logging.critical('РћС€РёР±РєР° РїРµСЂРµРјРµРЅРЅС‹С… РѕРєСЂСѓР¶РµРЅРёСЏ')
-        sys.exit('РћС€РёР±РєР° РїРµСЂРµРјРµРЅРЅС‹С… РѕРєСЂСѓР¶РµРЅРёСЏ')
+        logging.critical('Ошибка переменных окружения')
+        sys.exit('Ошибка переменных окружения')
     bot = Bot(token=TELEGRAM_TOKEN)
     while True:
         try:
@@ -108,16 +102,15 @@ def main():
             current_timestamp = response.get('current_date')
 
         except Exception as error:
-            message = f'РЎР±РѕР№ РІ СЂР°Р±РѕС‚Рµ РїСЂРѕРіСЂР°РјРјС‹: {error}'
+            message = f'Сбой в работе программы: {error}'
             logging.error(message)
             message_error = message
             if message_error != message:
                 send_message(bot, message)
-            message = f'РЎР±РѕР№ РІ СЂР°Р±РѕС‚Рµ РїСЂРѕРіСЂР°РјРјС‹: {error}'
         finally:
             time.sleep(RETRY_TIME)
-# РЇ РґСѓРјР°Р» Сѓ РјРµРЅСЏ Р±РѕР»СЊС€Рµ РїСЂРѕР±Р»РµРј РІ Р»РѕРіРёРєРµ РїСЂРѕРіСЂР°РјРјС‹
-# Р‘С‹Р»Рѕ РѕС‰СѓС‰РµРЅРёРµ С‡С‚Рѕ СЏ СЃРїСЂР°РІРёР»СЃСЏ РїСЂСЏРј РїР»РѕС…Рѕ, РІРµРґСЊ Р±РѕС‚ РЅРµ СЂР°Р±РѕС‚Р°Р»
+# при попытке запуска бота у меня все крашится на 53-56 строчке
+# так же не должно быть..?
 
 
 if __name__ == '__main__':
