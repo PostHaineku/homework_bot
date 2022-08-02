@@ -1,11 +1,14 @@
-from telegram import Bot
-import requests
-import os
-from dotenv import load_dotenv
-import time
 import logging
+import sys
+import os
+import time
 from http import HTTPStatus
-from exceptions import TokensException, HTTPStatusException
+
+import requests
+from dotenv import load_dotenv
+from telegram import Bot
+
+from exceptions import HTTPStatusException, MessageNotSent
 
 load_dotenv()
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -34,8 +37,11 @@ def send_message(bot, message):
     """Отправляет сообщение в тг."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
+        logging.info('Отправляем сообщение')
     except Exception('Сбой при отправке сообщения'):
-        logging.error('Сбой при отправке сообщения')
+        raise MessageNotSent('Сбой при отправке сообщения')
+    else:
+        logging.info('Сообщение отправлено!')
 
 
 def get_api_answer(current_timestamp):
@@ -43,71 +49,55 @@ def get_api_answer(current_timestamp):
     timestamp = current_timestamp
     params = {'from_date': timestamp}
     response = requests.get(ENDPOINT, headers=HEADERS, params=params)
+    logging.info('Начинаем запрос к API')
     if response.status_code == HTTPStatus.NOT_FOUND:
-        logging.error('Эндпоинт недоступен, пробуем подключиться')
         raise HTTPStatusException('Эндпоинт не отвечает')
     elif response.status_code != HTTPStatus.OK:
-        logging.error('Эндпоинт недоступен')
         raise HTTPStatusException('Эндпоинт недоступен')
-    else:
-        return response.json()
+    return response.json()
 
 
 def check_response(response):
     """Проверяет тип данных и возвращает нашу домашнюю работу."""
-    try:
-        homework = response['homeworks']
-        if not isinstance(homework, list):
-            raise TypeError('Неверный формат homeworks')
-        if 'homeworks' in response:
-            homework = response['homeworks']
-            return homework
-        else:
-            logging.error('Отсутствуют ожидаемые ключи')
-            raise KeyError('Отсутствуют ожидаемые ключи')
-    except response['homeworks'] is not list:
-        raise TypeError('wtf')
-
-# мне показалось, что ТЗ в этом спринте просто ужасно
-# я вообще не понимаю все исключения, которые нужно отрабатывать
-# можете, пожалуйста, дать мне какой-нибудь доп материал
-# или что именно мне нужно повторить/посмотреть/почитать
+    if not isinstance(response, dict):
+        raise TypeError('Неверный ответ API')
+    homework = response.get('homeworks')
+    if 'homeworks' not in response or 'current_date' not in response:
+        raise KeyError('Отсутствуют ожидаемые ключи')
+    if not isinstance(homework, list):
+        raise TypeError('Неверный формат homeworks')
+    return homework
+# Если честно, в силу того что я вообще не понимал
+# какие исключения отрабатывать
+# Я пытался методом великого тыка попасть в тесты пайтеста
+# Было очень поздно и я хотел сдать работу, чтобы вы меня ткнули носом
+# Я немного плаваю, особенно в вещах где нужно что-то реализовать, что в теории
+# Проскальзывало лишь отчасти. Буду признателен, если скинете почитать то
+# Что по коду видно, что я не понял
 
 
 def parse_status(homework):
     """Извлекает информацию о конкретной домашней работе."""
-    try:
-        homework_name = homework['homework_name']
-        homework_status = homework['status']
-        verdict = HOMEWORK_STATUSES[homework_status]
-        return f'Изменился статус проверки работы "{homework_name}". {verdict}'
-    except KeyError:
-        logging.error('Ошибка статуса домашней работы')
-        raise KeyError('Ошибка')
+    homework_name = homework.get('homework_name')
+    homework_status = homework.get('status')
+    if 'homework_name' not in homework:
+        raise KeyError('Отсутствуют ожидаемые ключи')
+    if homework_status not in HOMEWORK_STATUSES:
+        raise KeyError('Отсутствуют ожидаемые ключи')
+    verdict = HOMEWORK_STATUSES[homework_status]
+    return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
 def check_tokens():
-    """Проверка наличия переменных среды."""
-    # if 'PRACTICUM_TOKEN' and 'TELEGRAM_TOKEN'
-    # and 'TELEGRAM_CHAT_ID' not in os.environ:
-    #     logging.critical('Не хватает токенов в .env')
-    #     return False
-    if PRACTICUM_TOKEN and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
-        return True
-    else:
-        return False
-
-# я искренне пытался сделать так, чтобы оно прошло тесты
-# мой код работает,
-# но как сделать по другому и чтобы прошло тесты - я без понятия
+    return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
 
 
 def main():
     """Основная логика работы бота."""
-    bot = Bot(token=TELEGRAM_TOKEN)
-    if check_tokens() is not True:
+    if not check_tokens():
         logging.critical('Ошибка переменных окружения')
-        raise TokensException('Ошибка переменных окружения')
+        sys.exit('Ошибка переменных окружения')
+    bot = Bot(token=TELEGRAM_TOKEN)
     while True:
         try:
             current_timestamp = time.time()
@@ -116,7 +106,6 @@ def main():
             message = parse_status(homework[0])
             send_message(bot, message)
             current_timestamp = response.get('current_date')
-            time.sleep(RETRY_TIME)
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
@@ -125,7 +114,10 @@ def main():
             if message_error != message:
                 send_message(bot, message)
             message = f'Сбой в работе программы: {error}'
+        finally:
             time.sleep(RETRY_TIME)
+# Я думал у меня больше проблем в логике программы
+# Было ощущение что я справился прям плохо, ведь бот не работал
 
 
 if __name__ == '__main__':
