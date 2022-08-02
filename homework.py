@@ -1,4 +1,3 @@
-# -*- coding: cp1251 -*-
 import logging
 import sys
 import os
@@ -23,9 +22,9 @@ ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
 HOMEWORK_STATUSES = {
-    'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
-    'reviewing': 'Работа взята на проверку ревьюером.',
-    'rejected': 'Работа проверена: у ревьюера есть замечания.'
+    'approved': 'Р Р°Р±РѕС‚Р° РїСЂРѕРІРµСЂРµРЅР°: СЂРµРІСЊСЋРµСЂСѓ РІСЃС‘ РїРѕРЅСЂР°РІРёР»РѕСЃСЊ. РЈСЂР°!',
+    'reviewing': 'Р Р°Р±РѕС‚Р° РІР·СЏС‚Р° РЅР° РїСЂРѕРІРµСЂРєСѓ СЂРµРІСЊСЋРµСЂРѕРј.',
+    'rejected': 'Р Р°Р±РѕС‚Р° РїСЂРѕРІРµСЂРµРЅР°: Сѓ СЂРµРІСЊСЋРµСЂР° РµСЃС‚СЊ Р·Р°РјРµС‡Р°РЅРёСЏ.'
 }
 
 logging.basicConfig(
@@ -35,7 +34,7 @@ logging.basicConfig(
 
 
 def send_message(bot, message):
-    """Отправляет сообщение в тг."""
+    """РћС‚РїСЂР°РІР»СЏРµС‚ СЃРѕРѕР±С‰РµРЅРёРµ РІ С‚Рі."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logging.info('Sending message..')
@@ -46,7 +45,7 @@ def send_message(bot, message):
 
 
 def get_api_answer(current_timestamp):
-    """Получает ответ от апи."""
+    """РџРѕР»СѓС‡Р°РµС‚ РѕС‚РІРµС‚ РѕС‚ Р°РїРё."""
     timestamp = current_timestamp
     params = {'from_date': timestamp}
     logging.info('Requesting API access')
@@ -56,15 +55,16 @@ def get_api_answer(current_timestamp):
     elif response.status_code != HTTPStatus.OK:
         raise HTTPStatusException('Endpoint not responding')
     return response.json()
-# В общем, заработало если я ставлю timestamp=0
-# С текущим временем
-# рейзится исключение на 56 строчке
-# Вы писали что 54 строчка не нужна
-# но без нее не проходит пайтест
+# Р’ РѕР±С‰РµРј, Р·Р°СЂР°Р±РѕС‚Р°Р»Рѕ РµСЃР»Рё СЏ СЃС‚Р°РІР»СЋ timestamp=0
+# РЎ С‚РµРєСѓС‰РёРј РІСЂРµРјРµРЅРµРј
+# СЂРµР№Р·РёС‚СЃСЏ РёСЃРєР»СЋС‡РµРЅРёРµ РЅР° 56 СЃС‚СЂРѕС‡РєРµ
+# Р’С‹ РїРёСЃР°Р»Рё С‡С‚Рѕ 54 СЃС‚СЂРѕС‡РєР° РЅРµ РЅСѓР¶РЅР°
+# РЅРѕ Р±РµР· РЅРµРµ РЅРµ РїСЂРѕС…РѕРґРёС‚ РїР°Р№С‚РµСЃС‚
+# СЏ РµС‰Рµ С‡С‚Рѕ-С‚Рѕ РЅР°Р»Р°Р¶Р°Р» СЃ РєРѕРґРёСЂРѕРІРєР°РјРё...
 
 
 def check_response(response):
-    """Проверяет тип данных и возвращает нашу домашнюю работу."""
+    """РџСЂРѕРІРµСЂСЏРµС‚ С‚РёРї РґР°РЅРЅС‹С… Рё РІРѕР·РІСЂР°С‰Р°РµС‚ РЅР°С€Сѓ РґРѕРјР°С€РЅСЋСЋ СЂР°Р±РѕС‚Сѓ."""
     if not isinstance(response, dict):
         raise TypeError('Incorrect API response')
     homework = response.get('homeworks')
@@ -76,7 +76,7 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """Извлекает информацию о конкретной домашней работе."""
+    """РР·РІР»РµРєР°РµС‚ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РєРѕРЅРєСЂРµС‚РЅРѕР№ РґРѕРјР°С€РЅРµР№ СЂР°Р±РѕС‚Рµ."""
     homework_name = homework.get('homework_name')
     homework_status = homework.get('status')
     if 'homework_name' not in homework:
@@ -88,12 +88,12 @@ def parse_status(homework):
 
 
 def check_tokens():
-    """Проверям переменные среды."""
+    """РџСЂРѕРІРµСЂСЏРј РїРµСЂРµРјРµРЅРЅС‹Рµ СЃСЂРµРґС‹."""
     return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
 
 
 def main():
-    """Основная логика работы бота."""
+    """РћСЃРЅРѕРІРЅР°СЏ Р»РѕРіРёРєР° СЂР°Р±РѕС‚С‹ Р±РѕС‚Р°."""
     if not check_tokens():
         logging.critical('Environment variables error')
         sys.exit('Environment variables error')
