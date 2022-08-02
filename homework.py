@@ -57,8 +57,10 @@ def get_api_answer(current_timestamp):
         raise HTTPStatusException('Endpoint not responding')
     return response.json()
 # В общем, заработало если я ставлю timestamp=0
-# С текущим временем рейзится исключение на 56 строчке
-# Вы писали что 54 строчка не нужна, но без нее не проходит пайтест
+# С текущим временем
+# рейзится исключение на 56 строчке
+# Вы писали что 54 строчка не нужна
+# но без нее не проходит пайтест
 
 
 def check_response(response):
